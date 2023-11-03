@@ -38,3 +38,11 @@ impl<const P: u16> SrvConfig<P> {
         self.asset_package.as_ref()
     }
 }
+
+#[derive(Clone, serde::Deserialize, serde::Serialize, Debug)]
+#[serde(rename_all="camelCase")]
+pub struct KeycloakConfig {
+    pub keycloak_url: Option<Arc<str>>,
+    pub keycloak_client_id: Option<Arc<str>>,
+    pub keycloak_realm: Option<Arc<str>>,
+}

@@ -53,6 +53,17 @@ impl EmbeddedAsset {
         })
     }
 
+    pub fn json<T>(body: &T) -> anyhow::Result<Self> where T: serde::ser::Serialize {
+        let t = serde_json::to_vec(body)?;
+        let body = Bytes::from(gzip_encode_raw(&t));
+        Ok(Self {
+            status: 200,
+            body,
+            mime: Arc::from("application/json; charset=utf-8"),
+            cache: true,
+        })
+    }
+
     pub fn not_found(body: Bytes, mime: Arc<str>) -> Self {
         Self {
             status: 404,
