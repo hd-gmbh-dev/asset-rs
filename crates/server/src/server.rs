@@ -10,7 +10,7 @@ use axum::{
 };
 
 pub async fn route(State(app): State<App>, Path(asset): Path<String>) -> impl IntoResponse {
-    if !asset.contains(".") {
+    if !asset.contains('.') {
         return app
             .store()
             .index()
@@ -39,7 +39,7 @@ pub async fn index(State(app): State<App>) -> impl IntoResponse {
 pub async fn serve(app: App) -> anyhow::Result<()> {
     let addr = app.cfg().address().parse().unwrap();
     let router = Router::new()
-        .route("/.well-known/config", get(keycloak_config))
+        .route("/.well-known/config.json", get(keycloak_config))
         .route("/*asset", get(route))
         .fallback(get(index))
         .with_state(app);

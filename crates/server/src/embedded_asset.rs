@@ -42,7 +42,7 @@ impl EmbeddedAsset {
                 }
             }
             _ => {
-                let body = Bytes::from(gzip_encode_raw(&asset.bytes.as_ref()));
+                let body = Bytes::from(gzip_encode_raw(asset.bytes.as_ref()));
                 Self {
                     body,
                     mime: asset.mime.clone(),

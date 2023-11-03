@@ -43,7 +43,7 @@ impl AssetStore {
 
         let target_url = &asset_package.target_url;
         let public_url = cfg.public_url();
-        let index = EmbeddedAsset::new(&index, false, target_url, public_url)?;
+        let index = EmbeddedAsset::new(index, false, target_url, public_url)?;
         let assets = Arc::new(EmbeddedAssetMap::new(asset_package.assets.as_ref(), target_url, public_url, asset_package.index as usize)?);
         let not_found_mime: Arc<str> = Arc::from("text/plain");
         let not_found = Bytes::from_static(b"not found");
