@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "crates/*",
+    "wasm/*",
+    "examples/simple-sample-server",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.0.1"
+license = "MIT"
+edition = "2021"
+authors = ["Jürgen Seitz <juergen.seitz@h-d-gmbh.de>"]
+rust-version = "1.70"

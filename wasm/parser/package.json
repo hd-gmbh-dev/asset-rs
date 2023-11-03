@@ -1,0 +1,17 @@
+{
+    "name": "@ars/parser",
+    "version": "0.0.1",
+    "description": "Parse static assets into asset-rs binary format .ars",
+    "license": "MIT",
+    "scripts": {
+        "build": "wasm-pack build --target nodejs --release --scope ars --no-pack"
+    },
+    "main": "pkg/parser.js",
+    "types": "pkg/parser.d.ts",
+    "files": [
+        "pkg/parser_bg.wasm",
+        "pkg/parser_bg.wasm.d.ts",
+        "pkg/parser.d.ts",
+        "pkg/parser.js"
+    ]
+}
