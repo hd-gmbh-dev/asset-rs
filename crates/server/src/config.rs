@@ -40,7 +40,7 @@ impl<const P: u16> SrvConfig<P> {
 }
 
 #[derive(Clone, serde::Deserialize, serde::Serialize, Debug)]
-#[serde(rename_all="camelCase")]
+#[serde(rename_all(serialize="camelCase"))]
 pub struct KeycloakConfig {
     pub keycloak_url: Option<Arc<str>>,
     pub keycloak_client_id: Option<Arc<str>>,
