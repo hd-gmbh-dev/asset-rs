@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import type { Plugin, ResolvedConfig } from 'vite';
-import { setup, Parser } from '@ars/parser'
+import { setup, Parser } from '@assetrs/parser'
 
 async function postProcessSPA(assets: string[], target_url: string) {
     const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));

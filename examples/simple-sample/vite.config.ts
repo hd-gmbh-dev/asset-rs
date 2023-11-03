@@ -11,7 +11,7 @@ import {
   transformerDirectives,
   transformerVariantGroup
 } from 'unocss'
-import ars from '@ars/vite-plugin'
+import ars from '@assetrs/vite-plugin'
 
 // https://vitejs.dev/config/
 export default defineConfig({

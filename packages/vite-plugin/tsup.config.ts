@@ -7,5 +7,5 @@ export default defineConfig({
     splitting: false,
     sourcemap: true,
     clean: true,
-    external: ['@ars/parser', 'vite'],
+    external: ['@assetrs/parser', 'vite'],
 });
