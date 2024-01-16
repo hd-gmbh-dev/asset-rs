@@ -27,6 +27,14 @@ pub struct Asset {
 #[derive(Archive, Debug, Deserialize, Serialize, PartialEq, PartialOrd)]
 #[archive(check_bytes)]
 #[archive_attr(derive(Debug))]
+pub struct WebComponent {
+    pub name: Arc<str>,
+    pub path: Arc<str>,
+}
+
+#[derive(Archive, Debug, Deserialize, Serialize, PartialEq, PartialOrd)]
+#[archive(check_bytes)]
+#[archive_attr(derive(Debug))]
 pub struct AssetPackage {
     pub name: Arc<str>,
     pub index: i64,
@@ -35,6 +43,7 @@ pub struct AssetPackage {
     pub assets: Arc<[Arc<Asset>]>,
     pub created: i64,
     pub updated: i64,
+    pub web_components: Arc<[WebComponent]>,
 }
 
 pub fn serialize(pkg: AssetPackage) -> AlignedVec {

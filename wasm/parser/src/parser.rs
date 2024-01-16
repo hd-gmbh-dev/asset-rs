@@ -1,10 +1,13 @@
+use std::collections::HashMap;
 use std::path::Path;
 use std::{path::PathBuf, sync::Arc};
 use wasm_bindgen::prelude::*;
 
 use crate::fs::{read_file_sync, write_file_sync, exists_sync};
-use ars_package::AssetPackage;
+use ars_package::{AssetPackage, WebComponent};
 use ars_package::{deflate_encode_raw, Asset};
+
+const WC_HELPER_JS: &'static str = include_str!("../../../helper/load.js");
 
 #[derive(Default, serde::Deserialize)]
 pub struct Manifest {
@@ -12,6 +15,7 @@ pub struct Manifest {
     version: String,
     target_url: String,
     assets: Vec<String>,
+    web_components: HashMap<String, String>,
 }
 
 #[wasm_bindgen]
@@ -70,10 +74,20 @@ impl Parser {
             created,
             updated: created,
             index,
+            web_components: Arc::from(self.manifest.web_components.into_iter().map(|(k,v)| {
+                WebComponent {
+                    name: Arc::from(k),
+                    path: Arc::from(v),
+                }
+            }).collect::<Vec<WebComponent>>())
         };
         let p = self.base.join(format!("{}.ars", pkg.name.as_ref()));
         let file_name = p.to_str().unwrap();
         let content = deflate_encode_raw(&ars_package::serialize(pkg));
         write_file_sync(file_name, &content);
+    }
+
+    pub fn wc_helper_js() -> String {
+        WC_HELPER_JS.to_string()
     }
 }

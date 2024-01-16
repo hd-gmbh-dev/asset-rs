@@ -5,3 +5,4 @@ pnpm-lock.yaml
 pnpm-workspace.yaml
 wasm/**/pkg/*
 .eslintrc.cjs
+helper/*
