@@ -27,9 +27,18 @@ pub struct Asset {
 #[derive(Archive, Debug, Deserialize, Serialize, PartialEq, PartialOrd)]
 #[archive(check_bytes)]
 #[archive_attr(derive(Debug))]
+pub struct Locale {
+    pub lang: Arc<str>,
+    pub bytes: Arc<[u8]>,
+}
+
+#[derive(Archive, Debug, Deserialize, Serialize, PartialEq, PartialOrd)]
+#[archive(check_bytes)]
+#[archive_attr(derive(Debug))]
 pub struct WebComponent {
     pub name: Arc<str>,
     pub path: Arc<str>,
+    pub locales: Arc<[Locale]>,
 }
 
 #[derive(Archive, Debug, Deserialize, Serialize, PartialEq, PartialOrd)]

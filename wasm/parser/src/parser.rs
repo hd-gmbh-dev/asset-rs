@@ -4,10 +4,22 @@ use std::{path::PathBuf, sync::Arc};
 use wasm_bindgen::prelude::*;
 
 use crate::fs::{read_file_sync, write_file_sync, exists_sync};
-use ars_package::{AssetPackage, WebComponent};
+use ars_package::{AssetPackage, WebComponent, Locale};
 use ars_package::{deflate_encode_raw, Asset};
 
 const WC_HELPER_JS: &'static str = include_str!("../../../helper/load.js");
+
+#[derive(Default, serde::Deserialize)]
+pub struct WebComponentLocale {
+    lang: String,
+    path: String,
+}
+
+#[derive(Default, serde::Deserialize)]
+pub struct WebComponentInfo {
+    path: String,
+    locales: Vec<WebComponentLocale>,
+}
 
 #[derive(Default, serde::Deserialize)]
 pub struct Manifest {
@@ -15,7 +27,7 @@ pub struct Manifest {
     version: String,
     target_url: String,
     assets: Vec<String>,
-    web_components: HashMap<String, String>,
+    web_components: HashMap<String, WebComponentInfo>,
 }
 
 #[wasm_bindgen]
@@ -77,7 +89,16 @@ impl Parser {
             web_components: Arc::from(self.manifest.web_components.into_iter().map(|(k,v)| {
                 WebComponent {
                     name: Arc::from(k),
-                    path: Arc::from(v),
+                    path: Arc::from(v.path),
+                    locales: Arc::from(v.locales.into_iter().map(|l| {
+                        let p = self.base.join(&l.path);
+                        let file_name = p.to_str().unwrap();
+                        let content = read_file_sync(file_name);
+                        Locale {
+                            lang: Arc::from(l.lang),
+                            bytes: Arc::from(content),
+                        }
+                    }).collect::<Vec<Locale>>())
                 }
             }).collect::<Vec<WebComponent>>())
         };

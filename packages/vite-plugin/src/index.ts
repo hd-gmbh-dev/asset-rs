@@ -1,6 +1,9 @@
 import fs from 'node:fs';
-import type { Plugin, ResolvedConfig } from 'vite';
+import express from 'express';
+import cors from 'cors';
+import type { Plugin, ResolvedConfig, ProxyOptions, PreviewServer } from 'vite';
 import { setup, Parser } from '@assetrs/parser';
+import getLocales from './locales';
 
 let files: any[] = [];
 let bundle: any = null;
@@ -40,6 +43,18 @@ function postProcessSPA(
     parser.parse();
 }
 
+interface Locale {
+    lang: string;
+    path: string;
+}
+
+interface Component {
+    path: string;
+    locales: Locale[];
+}
+
+type ComponentMap = Record<string, Component>;
+
 function postProcessWc(
     config: AssetRsPluginConfig,
     files: any[],
@@ -47,11 +62,33 @@ function postProcessWc(
 ): void {
     const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
     const assets = files.map((f) => f.key);
-    const components = new Map<string, string>();
+    const components: ComponentMap = {};
+    const m: any = getLocales();
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (file.isEntry as boolean) {
+            const locales: Locale[] = [];
             const name = bundle[file.key].name;
+            if (m[name] as boolean) {
+                const languages = Object.keys(m[name]);
+                if (languages.length !== 0) {
+                    fs.mkdirSync(`./dist/locales/${name}`, {
+                        recursive: true,
+                    });
+                    for (const lang of languages) {
+                        const localePath = `locales/${name}/${lang}.json`;
+                        fs.writeFileSync(
+                            `./dist/${localePath}`,
+                            JSON.stringify(m[name][lang]),
+                            'utf-8',
+                        );
+                        locales.push({
+                            lang,
+                            path: localePath,
+                        });
+                    }
+                }
+            }
             const out = entrypointTemplate
                 .replace('TARGET_COMPONENT', name)
                 .replace('TARGET_URL', config.targetUrl + '/' + file.key);
@@ -61,7 +98,10 @@ function postProcessWc(
             const entryPointPath = `${config.fallbackPrefix}/${name}/${name}.js`;
             fs.writeFileSync(`./dist/${entryPointPath}`, out, 'utf-8');
             assets.push(entryPointPath);
-            components.set(name, entryPointPath);
+            components[name] = {
+                path: entryPointPath,
+                locales,
+            };
         }
     }
     const manifest = JSON.stringify({
@@ -77,6 +117,39 @@ function postProcessWc(
     parser.parse();
 }
 
+const proxy: Record<string, string | ProxyOptions> = {
+    '/embed/09000001': {}, // proxy our /api route to nowhere
+};
+
+function createPreviewApp(config: AssetRsPluginConfig): Express.Application {
+    const locales = getLocales();
+    const app = express();
+    app.use(cors());
+    if (config.wc ?? false) {
+        app.get(
+            '/embed/09000001/:serviceId/locales/:lang.:format',
+            (req: any, res: any) => {
+                const serviceId = req.params.serviceId;
+                const lang = req.params.lang;
+                const format = req.params.format;
+                if (serviceId && lang && format === 'json') {
+                    let result = locales[serviceId] ?? ({} as any);
+                    result = result[lang] ?? null;
+                    if (result === null) {
+                        console.error(locales);
+                        res.status(404).send('not found');
+                    } else {
+                        res.json(result);
+                    }
+                } else {
+                    res.status(404).send('not found');
+                }
+            },
+        );
+    }
+    return app;
+}
+
 const PLUGIN_NAME = 'ars-vite-plugin';
 export default function ars(config: AssetRsPluginConfig = {}): Plugin {
     config.wc = config.wc ?? false;
@@ -87,6 +160,22 @@ export default function ars(config: AssetRsPluginConfig = {}): Plugin {
     let assets: string[] = [];
     return {
         name: PLUGIN_NAME,
+        config() {
+            return {
+                preview: {
+                    proxy,
+                    cors: {
+                        origin: '*',
+                        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+                        preflightContinue: false,
+                        optionsSuccessStatus: 204,
+                    },
+                },
+            };
+        },
+        configurePreviewServer(server: PreviewServer) {
+            server.middlewares.use(createPreviewApp(config) as any);
+        },
         async configResolved(config: ResolvedConfig) {
             viteConfig = config;
         },
