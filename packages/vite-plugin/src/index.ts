@@ -1,9 +1,10 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import express from 'express';
 import cors from 'cors';
 import type { Plugin, ResolvedConfig, ProxyOptions, PreviewServer } from 'vite';
 import { setup, Parser } from '@assetrs/parser';
-import getLocales from './locales';
+import getLocales, { getMetadata, prepareMetadata } from './locales';
 
 let files: any[] = [];
 let bundle: any = null;
@@ -15,6 +16,16 @@ export interface StaticAsset {
     dest: string;
 }
 
+export interface PageData {
+    defaultLanguage?: string;
+    name: string;
+    title: string;
+}
+
+export interface Page {
+    data: PageData;
+}
+
 export interface AssetRsPluginConfig {
     wc?: boolean;
     targetUrl?: string;
@@ -22,19 +33,33 @@ export interface AssetRsPluginConfig {
     prefix?: string;
     fallbackPrefix?: string;
     staticAssets?: StaticAsset[];
+    pages?: Page[];
 }
 
-function postProcessSPA(
+async function processStaticAssets(
+    assets: any[],
+    staticAssets: StaticAsset[],
+): Promise<any[]> {
+    for (const staticAsset of staticAssets) {
+        const files = fs.readdirSync(path.join('./dist', staticAsset.dest));
+        for (const file of files) {
+            assets.push(path.join(staticAsset.dest, file));
+        }
+    }
+    return assets;
+}
+
+async function postProcessSPA(
     assets: string[],
     targetUrl: string,
     config: AssetRsPluginConfig,
-): void {
+): Promise<void> {
     const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
     const manifest = JSON.stringify({
         name: pkg.name,
         version: pkg.version,
         target_url: targetUrl,
-        assets,
+        assets: processStaticAssets(assets, config.staticAssets ?? []),
         spa: config.wc ?? false,
     });
     fs.writeFileSync(`./dist/manifest.json`, manifest, 'utf-8');
@@ -50,25 +75,51 @@ interface Locale {
 
 interface Component {
     path: string;
+    name: string;
     locales: Locale[];
+    locales_metadata_path: string | undefined;
 }
 
 type ComponentMap = Record<string, Component>;
+type TitlesMap = Record<string, string>;
+type DefaultLanguagesMap = Record<string, string>;
 
-function postProcessWc(
+async function postProcessWc(
     config: AssetRsPluginConfig,
     files: any[],
     bundle: any,
-): void {
+): Promise<void> {
     const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
     const assets = files.map((f) => f.key);
     const components: ComponentMap = {};
     const m: any = getLocales();
+
+    const titles: TitlesMap = (config.pages ?? []).reduce(
+        (state: TitlesMap, page: Page) => {
+            state[page.data.name] = page.data.title;
+            return state;
+        },
+        {},
+    );
+
+    const defaultLanguages: DefaultLanguagesMap = (config.pages ?? []).reduce(
+        (state: DefaultLanguagesMap, page: Page) => {
+            state[page.data.name] = page.data.defaultLanguage ?? 'de';
+            return state;
+        },
+        {},
+    );
+    const localesMetaDataInput: any = await getMetadata();
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (file.isEntry as boolean) {
             const locales: Locale[] = [];
             const name = bundle[file.key].name;
+            let title = name;
+            let localesMetadataPath;
+            if (titles[name]) {
+                title = titles[name];
+            }
             if (m[name] as boolean) {
                 const languages = Object.keys(m[name]);
                 if (languages.length !== 0) {
@@ -87,6 +138,23 @@ function postProcessWc(
                             path: localePath,
                         });
                     }
+                    if (localesMetaDataInput[name]) {
+                        localesMetadataPath = `locales/${name}/meta.json`;
+                        const defaultLanguage = defaultLanguages[name];
+                        fs.writeFileSync(
+                            `./dist/${localesMetadataPath}`,
+                            JSON.stringify(
+                                prepareMetadata(
+                                    name,
+                                    localesMetaDataInput[name],
+                                    m[name][defaultLanguage],
+                                    defaultLanguage,
+                                    languages,
+                                ),
+                            ),
+                            'utf-8',
+                        );
+                    }
                 }
             }
             const out = entrypointTemplate
@@ -100,7 +168,9 @@ function postProcessWc(
             assets.push(entryPointPath);
             components[name] = {
                 path: entryPointPath,
+                name: title,
                 locales,
+                locales_metadata_path: localesMetadataPath,
             };
         }
     }
@@ -108,7 +178,7 @@ function postProcessWc(
         name: config.name ?? pkg.name,
         version: pkg.version,
         target_url: config.targetUrl,
-        assets,
+        assets: await processStaticAssets(assets, config.staticAssets ?? []),
         web_components: components,
     });
     fs.writeFileSync(`./dist/manifest.json`, manifest, 'utf-8');
@@ -200,11 +270,11 @@ export default function ars(config: AssetRsPluginConfig = {}): Plugin {
                 bundle = b;
             }
         },
-        closeBundle() {
+        async closeBundle() {
             if (config.wc ?? false) {
-                postProcessWc(config, files, bundle);
+                await postProcessWc(config, files, bundle);
             } else {
-                postProcessSPA(assets, viteConfig?.base ?? '', config);
+                await postProcessSPA(assets, viteConfig?.base ?? '', config);
             }
         },
     };

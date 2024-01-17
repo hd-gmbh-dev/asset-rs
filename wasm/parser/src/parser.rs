@@ -17,8 +17,10 @@ pub struct WebComponentLocale {
 
 #[derive(Default, serde::Deserialize)]
 pub struct WebComponentInfo {
+    name: String,
     path: String,
     locales: Vec<WebComponentLocale>,
+    locales_metadata_path: Option<String>,
 }
 
 #[derive(Default, serde::Deserialize)]
@@ -88,7 +90,8 @@ impl Parser {
             index,
             web_components: Arc::from(self.manifest.web_components.into_iter().map(|(k,v)| {
                 WebComponent {
-                    name: Arc::from(k),
+                    id: Arc::from(k),
+                    name: Arc::from(v.name),
                     path: Arc::from(v.path),
                     locales: Arc::from(v.locales.into_iter().map(|l| {
                         let p = self.base.join(&l.path);
@@ -98,7 +101,13 @@ impl Parser {
                             lang: Arc::from(l.lang),
                             bytes: Arc::from(content),
                         }
-                    }).collect::<Vec<Locale>>())
+                    }).collect::<Vec<Locale>>()),
+                    locales_metadata: v.locales_metadata_path.map(|locales_metadata_path| {
+                        let p = self.base.join(&locales_metadata_path);
+                        let file_name = p.to_str().unwrap();
+                        let content = read_file_sync(file_name);
+                        Arc::from(content)
+                    })
                 }
             }).collect::<Vec<WebComponent>>())
         };

@@ -36,9 +36,11 @@ pub struct Locale {
 #[archive(check_bytes)]
 #[archive_attr(derive(Debug))]
 pub struct WebComponent {
+    pub id: Arc<str>,
     pub name: Arc<str>,
     pub path: Arc<str>,
     pub locales: Arc<[Locale]>,
+    pub locales_metadata: Option<Arc<[u8]>>,
 }
 
 #[derive(Archive, Debug, Deserialize, Serialize, PartialEq, PartialOrd)]
