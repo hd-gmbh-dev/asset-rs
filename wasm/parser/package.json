@@ -1,6 +1,6 @@
 {
     "name": "@assetrs/parser",
-    "version": "0.0.6",
+    "version": "0.0.7",
     "description": "Parse static assets into asset-rs binary format .ars",
     "license": "MIT",
     "scripts": {
