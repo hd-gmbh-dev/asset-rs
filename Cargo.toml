@@ -7,7 +7,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.0.8"
+version = "0.0.9"
 license = "MIT"
 edition = "2021"
 authors = ["Jürgen Seitz <juergen.seitz@h-d-gmbh.de>"]

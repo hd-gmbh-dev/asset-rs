@@ -59,8 +59,9 @@ async function postProcessSPA(
         name: pkg.name,
         version: pkg.version,
         target_url: targetUrl,
-        assets: processStaticAssets(assets, config.staticAssets ?? []),
+        assets: await processStaticAssets(assets, config.staticAssets ?? []),
         spa: true,
+        web_components: {},
     });
     fs.writeFileSync(`./dist/manifest.json`, manifest, 'utf-8');
     setup();
