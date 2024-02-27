@@ -1,10 +1,11 @@
 {
     "name": "@assetrs/vite-plugin",
-    "version": "0.0.9",
+    "version": "0.0.10",
     "description": "Asset RS - Vite plugin to package into .ars binary format",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
     "types": "./dist/index.d.ts",
+    "type": "module",
     "scripts": {
         "build": "tsup"
     },
